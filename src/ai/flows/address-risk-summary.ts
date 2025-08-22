@@ -10,13 +10,13 @@
 
 import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
-import { getTransactionList, type Transaction } from '@/services/etherscan';
+import { getTransactionList } from '@/services/etherscan';
 
 const AddressRiskSummaryInputSchema = z.object({
   address: z
     .string()
     .describe('The cryptocurrency address to analyze.'),
-  blockchain: z.string().optional().describe('The blockchain network of the address. Optional.'),
+  blockchain: z.string().describe('The blockchain network of the address.'),
 });
 export type AddressRiskSummaryInput = z.infer<typeof AddressRiskSummaryInputSchema>;
 
@@ -28,17 +28,18 @@ export type AddressRiskSummaryOutput = z.infer<typeof AddressRiskSummaryOutputSc
 const getTransactionsTool = ai.defineTool(
   {
     name: 'getTransactionHistory',
-    description: 'Get the transaction history for a given cryptocurrency address. Only works for Ethereum mainnet.',
+    description: 'Get the transaction history for a given cryptocurrency address on a specific blockchain.',
     inputSchema: z.object({
       address: z.string().describe('The cryptocurrency address.'),
+      blockchain: z.string().describe('The blockchain network (e.g., ethereum, base_mainnet).'),
     }),
     outputSchema: z.array(z.any()),
   },
   async (input) => {
-    console.log(`Using getTransactionHistory tool for address: ${input.address}`);
+    console.log(`Using getTransactionHistory tool for address: ${input.address} on ${input.blockchain}`);
     try {
       // We are limiting to the first 10 transactions for this example to keep the prompt concise.
-      const transactions = (await getTransactionList(input.address)).slice(0, 10);
+      const transactions = (await getTransactionList(input.address, input.blockchain)).slice(0, 10);
       return transactions;
     } catch (e) {
       console.error(e);
@@ -61,11 +62,11 @@ const prompt = ai.definePrompt({
   tools: [getTransactionsTool],
   prompt: `You are an expert in cryptocurrency risk analysis.
 
-You will analyze the given cryptocurrency address and provide a summary of the potential risks associated with it.
+You will analyze the given cryptocurrency address on the specified blockchain and provide a summary of the potential risks associated with it.
 
-Use the getTransactionHistory tool to fetch the latest transactions. Analyze this data to identify risks.
+Use the getTransactionHistory tool to fetch the latest transactions for the address on its blockchain. Analyze this data to identify risks.
 Consider factors like transaction history, velocity, contract interactions, token holdings, and any known associations with illicit activities.
-If transaction history is available, mention it in your summary. If it is not available or an error occurs, state that you were unable to retrieve transaction data.
+If transaction history is available, mention key details in your summary. If it is not available or an error occurs, state that you were unable to retrieve transaction data.
 
 Your summary should start with an immediate risk level assessment: "Low Risk:", "Medium Risk:", or "High Risk:".
 
