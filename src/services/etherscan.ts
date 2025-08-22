@@ -31,6 +31,13 @@ export interface Token {
   type: string;
 }
 
+export interface Nft {
+    tokenID: string;
+    contractAddress: string;
+    tokenName: string;
+    tokenSymbol: string;
+}
+
 const V2_API_URL = 'https://api.etherscan.io/v2/api';
 const API_KEY = process.env.ETHERSCAN_API_KEY || '';
 
@@ -41,7 +48,6 @@ const chainIdMap: Record<string, string> = {
     bsc: '56',
     polygon: '137',
     arbitrum: '42161',
-    // Add other supported chains here
 };
 
 
@@ -150,6 +156,48 @@ export async function getTokenList(address: string, chain: string): Promise<Toke
         return Array.from(uniqueTokens.values());
     } catch(e) {
         console.error("Error in getTokenList:", e);
+        return [];
+    }
+}
+
+
+/**
+ * Fetches the list of ERC721 (NFT) tokens held by an address.
+ */
+export async function getNftList(address: string, chain: string): Promise<Nft[]> {
+    try {
+        const nftTxs = await makeApiRequest(chain, {
+            module: 'account',
+            action: 'tokennfttx',
+            address: address,
+            startblock: '0',
+            endblock: '99999999',
+            page: '1',
+            offset: '1000',
+            sort: 'desc',
+        });
+         if (!Array.isArray(nftTxs)) {
+            console.warn(`Expected an array of NFT transactions, but got:`, nftTxs);
+            return [];
+        }
+
+        const uniqueNfts = new Map<string, Nft>();
+        nftTxs.forEach((tx: any) => {
+            const uniqueId = `${tx.contractAddress}-${tx.tokenID}`;
+            if (!uniqueNfts.has(uniqueId)) {
+                 uniqueNfts.set(uniqueId, {
+                    contractAddress: tx.contractAddress,
+                    tokenID: tx.tokenID,
+                    tokenName: tx.tokenName,
+                    tokenSymbol: tx.tokenSymbol,
+                });
+            }
+        });
+
+        return Array.from(uniqueNfts.values());
+
+    } catch (e) {
+        console.error("Error in getNftList:", e);
         return [];
     }
 }

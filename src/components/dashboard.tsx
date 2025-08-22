@@ -1,8 +1,8 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { getTransactions } from "@/app/actions"
-import type { Transaction } from "@/services/etherscan"
+import { getTransactions, getNfts } from "@/app/actions"
+import type { Transaction, Nft } from "@/services/etherscan"
 
 import { Button } from "@/components/ui/button"
 import { ChainEyeIcon } from "@/components/icons"
@@ -12,6 +12,8 @@ import { RecentTransactions } from "@/components/recent-transactions"
 import { ContractInteractions } from "@/components/contract-interactions"
 import { RiskAnalysis } from "@/components/risk-analysis"
 import { useToast } from "@/hooks/use-toast"
+import { NftGallery } from "./nft-gallery"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "./ui/tabs"
 
 
 interface DashboardProps {
@@ -22,7 +24,9 @@ interface DashboardProps {
 
 export function Dashboard({ address, blockchain, onReset }: DashboardProps) {
   const [transactions, setTransactions] = useState<Transaction[] | null>(null);
+  const [nfts, setNfts] = useState<Nft[] | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [isLoadingNfts, setIsLoadingNfts] = useState(true);
   const { toast } = useToast();
   
   useEffect(() => {
@@ -42,7 +46,24 @@ export function Dashboard({ address, blockchain, onReset }: DashboardProps) {
       
       setIsLoading(false);
     };
+
+    const fetchNfts = async () => {
+      setIsLoadingNfts(true);
+      const nftResult = await getNfts(address, blockchain);
+       if (nftResult.success && nftResult.nfts) {
+        setNfts(nftResult.nfts);
+      } else {
+         toast({
+          variant: "destructive",
+          title: "Failed to Fetch NFTs",
+          description: nftResult.error || "Could not load NFT holdings.",
+        })
+      }
+      setIsLoadingNfts(false);
+    };
+
     fetchAllData();
+    fetchNfts();
   }, [address, blockchain, toast]);
 
 
@@ -66,17 +87,28 @@ export function Dashboard({ address, blockchain, onReset }: DashboardProps) {
       <div className="space-y-6">
         <RiskAnalysis address={address} blockchain={blockchain} />
         
-        <OverviewCards transactions={transactions} isLoading={isLoading} address={address} />
+        <OverviewCards transactions={transactions} isLoading={isLoading} address={address} nfts={nfts} isLoadingNfts={isLoadingNfts}/>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <div className="lg:col-span-2">
-            <TokenHoldings address={address} blockchain={blockchain} />
-          </div>
-          <div className="lg:col-span-1">
-            <ContractInteractions transactions={transactions} isLoading={isLoading} />
-          </div>
-        </div>
-
+        <Tabs defaultValue="tokens">
+            <TabsList className="grid w-full grid-cols-2">
+                <TabsTrigger value="tokens">Fungible Tokens</TabsTrigger>
+                <TabsTrigger value="nfts">NFT Gallery</TabsTrigger>
+            </TabsList>
+            <TabsContent value="tokens">
+                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mt-6">
+                    <div className="lg:col-span-2">
+                        <TokenHoldings address={address} blockchain={blockchain} />
+                    </div>
+                    <div className="lg:col-span-1">
+                        <ContractInteractions transactions={transactions} isLoading={isLoading} />
+                    </div>
+                </div>
+            </TabsContent>
+            <TabsContent value="nfts">
+                <NftGallery nfts={nfts} isLoading={isLoadingNfts}/>
+            </TabsContent>
+        </Tabs>
+        
         <RecentTransactions transactions={transactions?.slice(0, 10) ?? null} isLoading={isLoading} address={address} />
       </div>
     </div>
