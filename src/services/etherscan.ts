@@ -1,7 +1,7 @@
-/**
- * @fileoverview Service for interacting with blockchain explorer APIs like Etherscan.
- */
 'use server';
+/**
+ * @fileoverview Service for interacting with the Etherscan V2 API.
+ */
 
 export interface Transaction {
   blockNumber: string;
@@ -23,88 +23,65 @@ export interface Transaction {
 }
 
 export interface Token {
-    balance: string;
-    contractAddress: string;
-    decimals: string;
-    name: string;
-    symbol: string;
-    type: string;
+  balance: string;
+  contractAddress: string;
+  decimals: string;
+  name: string;
+  symbol: string;
+  type: string;
 }
 
+const V2_API_URL = 'https://api.etherscan.io/v2/api';
+const API_KEY = process.env.ETHERSCAN_API_KEY || '';
 
-const providerConfig = {
-    ethereum: {
-        apiUrl: 'https://api.etherscan.io/api',
-        apiKey: process.env.ETHERSCAN_API_KEY || ''
-    },
-    base_mainnet: {
-        apiUrl: 'https://api.basescan.org/api',
-        apiKey: process.env.BASESCAN_API_KEY || ''
-    },
-    base_sepolia: {
-        apiUrl: 'https://api-sepolia.basescan.org/api',
-        apiKey: process.env.BASESCAN_API_KEY || ''
-    },
-    bsc: {
-        apiUrl: 'https://api.bscscan.com/api',
-        apiKey: process.env.BSCSCAN_API_KEY || ''
-    },
-    polygon: {
-        apiUrl: 'https://api.polygonscan.com/api',
-        apiKey: process.env.POLYGONSCAN_API_KEY || ''
-    },
-    arbitrum: {
-        apiUrl: 'https://api.arbiscan.io/api',
-        apiKey: process.env.ARBISCAN_API_KEY || ''
-    },
+const chainIdMap: Record<string, string> = {
+    ethereum: '1',
+    base_mainnet: '8453',
+    base_sepolia: '84532',
+    bsc: '56',
+    polygon: '137',
+    arbitrum: '42161',
+    // Add other supported chains here
 };
 
-type SupportedChain = keyof typeof providerConfig;
 
 async function makeApiRequest(chain: string, params: Record<string, string>): Promise<any> {
-    const chainKey = chain as SupportedChain;
-    const config = providerConfig[chainKey];
-
-    if (!config) {
+    const chainId = chainIdMap[chain];
+    if (!chainId) {
         throw new Error(`Unsupported chain: ${chain}`);
     }
-    
-    const { apiUrl, apiKey } = config;
 
-    if (!apiKey) {
-        throw new Error(`API key for ${chain} is not configured. Please add it to your .env file.`);
+    if (!API_KEY) {
+        throw new Error(`Etherscan API key is not configured. Please add ETHERSCAN_API_KEY to your .env file.`);
     }
 
     const searchParams = new URLSearchParams({
         ...params,
-        apikey: apiKey,
+        chainid: chainId,
+        apikey: API_KEY,
     });
 
     try {
-        const response = await fetch(`${apiUrl}?${searchParams.toString()}`);
+        const response = await fetch(`${V2_API_URL}?${searchParams.toString()}`);
         if (!response.ok) {
-            console.error(`API request to ${chain} failed with status ${response.status}:`, await response.text());
+            console.error(`API request to ${chain} (ChainID: ${chainId}) failed with status ${response.status}:`, await response.text());
             throw new Error(`API request to ${chain} failed with status ${response.status}`);
         }
         const data = await response.json();
         
         if (data.status === '0') {
-             // "No transactions found" is a valid empty state, not a critical error.
             if (data.message && (data.message.toLowerCase().includes('no transactions found') || data.message.toLowerCase().includes('no records found'))) {
                 return [];
             }
-            // For other messages like invalid API key, we should throw an error.
             console.error(`API for ${chain} returned an error: ${data.message} - ${data.result}`);
-            // Provide a more specific error message.
             if (data.result && typeof data.result === 'string' && data.result.toLowerCase().includes('invalid api key')) {
-                 throw new Error(`Invalid API Key for ${chain}. Please check your .env configuration.`);
+                 throw new Error(`Invalid Etherscan API Key. Please check your .env configuration.`);
             }
             throw new Error(`API Error on ${chain}: ${data.message}`);
         }
         return data.result;
     } catch (error) {
-        console.error(`Failed to fetch from ${chain}:`, error);
-        // Re-throw the error to be handled by the caller (e.g., the AI tool)
+        console.error(`Failed to fetch from ${chain} (ChainID: ${chainId}):`, error);
         throw error;
     }
 }
@@ -117,52 +94,62 @@ async function makeApiRequest(chain: string, params: Record<string, string>): Pr
  * @returns A promise that resolves to the list of transactions.
  */
 export async function getTransactionList(address: string, chain: string): Promise<Transaction[]> {
-  const result = await makeApiRequest(chain, {
-    module: 'account',
-    action: 'txlist',
-    address: address,
-    startblock: '0',
-    endblock: '99999999',
-    page: '1',
-    offset: '1000', // Get last 1000 transactions to get a better sense of activity
-    sort: 'desc',
-  });
-  return Array.isArray(result) ? result : [];
+  try {
+      const result = await makeApiRequest(chain, {
+        module: 'account',
+        action: 'txlist',
+        address: address,
+        startblock: '0',
+        endblock: '99999999',
+        page: '1',
+        offset: '1000', // Get last 1000 transactions to get a better sense of activity
+        sort: 'desc',
+      });
+      return Array.isArray(result) ? result : [];
+  } catch (e) {
+      console.error("Error in getTransactionList:", e);
+      return [];
+  }
 }
 
 /**
  * Fetches the list of ERC20 tokens held by an address.
  */
 export async function getTokenList(address: string, chain: string): Promise<Token[]> {
-    const tokenTxs = await makeApiRequest(chain, {
-        module: 'account',
-        action: 'tokentx',
-        address: address,
-        startblock: '0',
-        endblock: '99999999',
-        page: '1',
-        offset: '1000', // Check a good number of transfers to find all tokens
-        sort: 'desc',
-    });
+    try {
+        const tokenTxs = await makeApiRequest(chain, {
+            module: 'account',
+            action: 'tokentx',
+            address: address,
+            startblock: '0',
+            endblock: '99999999',
+            page: '1',
+            offset: '1000', // Check a good number of transfers to find all tokens
+            sort: 'desc',
+        });
 
-    if (!Array.isArray(tokenTxs)) {
-        console.warn(`Expected an array of token transactions, but got:`, tokenTxs);
+        if (!Array.isArray(tokenTxs)) {
+            console.warn(`Expected an array of token transactions, but got:`, tokenTxs);
+            return [];
+        }
+        
+        const uniqueTokens = new Map<string, Token>();
+        tokenTxs.forEach((tx: any) => {
+            if (tx.contractAddress && !uniqueTokens.has(tx.contractAddress)) {
+                uniqueTokens.set(tx.contractAddress, {
+                    contractAddress: tx.contractAddress,
+                    name: tx.tokenName,
+                    symbol: tx.tokenSymbol,
+                    decimals: tx.tokenDecimal,
+                    balance: '0', // Note: Balance calculation is not performed in this simple version
+                    type: 'ERC-20', // Assuming ERC-20 from tokentx
+                });
+            }
+        });
+
+        return Array.from(uniqueTokens.values());
+    } catch(e) {
+        console.error("Error in getTokenList:", e);
         return [];
     }
-    
-    const uniqueTokens = new Map<string, Token>();
-    tokenTxs.forEach((tx: any) => {
-        if (tx.contractAddress && !uniqueTokens.has(tx.contractAddress)) {
-            uniqueTokens.set(tx.contractAddress, {
-                contractAddress: tx.contractAddress,
-                name: tx.tokenName,
-                symbol: tx.tokenSymbol,
-                decimals: tx.tokenDecimal,
-                balance: '0', // Note: Balance calculation is not performed in this simple version
-                type: 'ERC-20', // Assuming ERC-20 from tokentx
-            });
-        }
-    });
-
-    return Array.from(uniqueTokens.values());
 }
