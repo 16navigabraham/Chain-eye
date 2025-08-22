@@ -3,7 +3,7 @@
  */
 'use server';
 
-interface Transaction {
+export interface Transaction {
   blockNumber: string;
   timeStamp: string;
   hash: string;

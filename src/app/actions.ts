@@ -1,6 +1,9 @@
 "use server";
 
 import { getAddressRiskSummary, type AddressRiskSummaryInput } from '@/ai/flows/address-risk-summary';
+import { getTransactionList } from '@/services/etherscan';
+import type { Transaction } from '@/services/etherscan';
+
 
 export async function generateRiskSummary(input: AddressRiskSummaryInput): Promise<{ success: boolean; summary?: string; error?: string }> {
   try {
@@ -13,5 +16,16 @@ export async function generateRiskSummary(input: AddressRiskSummaryInput): Promi
     const errorMessage = e instanceof Error ? e.message : 'An unknown error occurred.';
     // In a production app, you'd log this error to a monitoring service.
     return { success: false, error: `Failed to generate AI risk summary: ${errorMessage}. Please try again later.` };
+  }
+}
+
+export async function getTransactions(address: string, blockchain: string): Promise<{ success: boolean; transactions?: Transaction[]; error?: string }> {
+  try {
+    const transactions = await getTransactionList(address, blockchain);
+    return { success: true, transactions: transactions.slice(0, 10) }; // Return top 10 recent
+  } catch (e) {
+    console.error(e);
+    const errorMessage = e instanceof Error ? e.message : 'An unknown error occurred.';
+    return { success: false, error: `Failed to fetch transactions: ${errorMessage}.` };
   }
 }

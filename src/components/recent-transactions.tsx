@@ -1,5 +1,9 @@
 "use client"
 
+import { useEffect, useState } from "react"
+import { getTransactions } from "@/app/actions"
+import type { Transaction } from "@/services/etherscan"
+
 import {
   Card,
   CardContent,
@@ -16,45 +20,14 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
-import { ArrowDownLeft, ArrowUpRight, FileText, XCircle } from "lucide-react"
+import { Skeleton } from "@/components/ui/skeleton"
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
+import { ArrowDownLeft, ArrowUpRight, FileText, XCircle, AlertTriangle } from "lucide-react"
 
-const transactions = [
-  {
-    hash: "0x1b2c...d4e5",
-    type: "Outgoing",
-    from: "0xde0b...7bae",
-    to: "0xa1b2...8f9e",
-    value: "1.5 ETH",
-  },
-  {
-    hash: "0x3c4d...a6b7",
-    type: "Incoming",
-    from: "0xc5d6...1a2b",
-    to: "0xde0b...7bae",
-    value: "0.75 ETH",
-  },
-  {
-    hash: "0x5e6f...b8c9",
-    type: "Contract",
-    from: "0xde0b...7bae",
-    to: "Uniswap V3 Router",
-    value: "0 ETH",
-  },
-  {
-    hash: "0x7a8b...e0d1",
-    type: "Failed",
-    from: "0xde0b...7bae",
-    to: "0x1inch Aggregator",
-    value: "0 ETH",
-  },
-  {
-    hash: "0x9c0d...f2e3",
-    type: "Incoming",
-    from: "0xf3g4...c5d6",
-    to: "0xde0b...7bae",
-    value: "1,000 USDC",
-  },
-]
+interface RecentTransactionsProps {
+  address: string;
+  blockchain: string;
+}
 
 const typeMapping = {
     Outgoing: {
@@ -79,7 +52,107 @@ const typeMapping = {
     }
 };
 
-export function RecentTransactions() {
+export function RecentTransactions({ address, blockchain }: RecentTransactionsProps) {
+  const [transactions, setTransactions] = useState<Transaction[] | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const fetchTransactions = async () => {
+      setIsLoading(true);
+      setError(null);
+      const result = await getTransactions(address, blockchain);
+      if (result.success && result.transactions) {
+        setTransactions(result.transactions);
+      } else {
+        setError(result.error || "An unknown error occurred.");
+      }
+      setIsLoading(false);
+    };
+    fetchTransactions();
+  }, [address, blockchain]);
+  
+  const renderBody = () => {
+    if (isLoading) {
+      return (
+        <TableBody>
+          {[...Array(5)].map((_, i) => (
+            <TableRow key={i}>
+              <TableCell colSpan={4}>
+                <Skeleton className="h-8 w-full" />
+              </TableCell>
+            </TableRow>
+          ))}
+        </TableBody>
+      );
+    }
+
+    if (error) {
+      return (
+        <TableBody>
+          <TableRow>
+            <TableCell colSpan={4}>
+              <Alert variant="destructive">
+                <AlertTriangle className="h-4 w-4" />
+                <AlertTitle>Error Fetching Transactions</AlertTitle>
+                <AlertDescription>{error}</AlertDescription>
+              </Alert>
+            </TableCell>
+          </TableRow>
+        </TableBody>
+      );
+    }
+    
+    if (!transactions || transactions.length === 0) {
+       return (
+        <TableBody>
+          <TableRow>
+            <TableCell colSpan={4} className="text-center">
+              No recent transactions found.
+            </TableCell>
+          </TableRow>
+        </TableBody>
+      );
+    }
+
+    return (
+       <TableBody>
+        {transactions.map((tx) => {
+          const isError = tx.isError === "1";
+          const isSender = tx.from.toLowerCase() === address.toLowerCase();
+          
+          let type = "Contract";
+          if (isError) {
+              type = "Failed";
+          } else if (isSender) {
+              type = "Outgoing";
+          } else {
+              type = "Incoming";
+          }
+
+          const mapping = typeMapping[type as keyof typeof typeMapping];
+          const Icon = mapping.icon;
+          
+          return (
+            <TableRow key={tx.hash}>
+              <TableCell>
+                <Badge variant={mapping.variant as any} className={mapping.className}>
+                  <Icon className="mr-2 h-4 w-4" />
+                  {type}
+                </Badge>
+              </TableCell>
+              <TableCell className="font-mono text-xs truncate" style={{maxWidth: '150px'}}>{tx.from}</TableCell>
+              <TableCell className="font-mono text-xs truncate" style={{maxWidth: '150px'}}>{tx.to}</TableCell>
+              <TableCell className="text-right font-medium tabular-nums">
+                {(parseInt(tx.value) / 1e18).toFixed(6)} ETH
+              </TableCell>
+            </TableRow>
+          );
+        })}
+      </TableBody>
+    )
+  }
+
   return (
     <Card>
       <CardHeader>
@@ -96,25 +169,7 @@ export function RecentTransactions() {
               <TableHead className="text-right">Value</TableHead>
             </TableRow>
           </TableHeader>
-          <TableBody>
-            {transactions.map((tx) => {
-                const mapping = typeMapping[tx.type as keyof typeof typeMapping] || typeMapping.Contract;
-                const Icon = mapping.icon;
-                return (
-                    <TableRow key={tx.hash}>
-                        <TableCell>
-                            <Badge variant={mapping.variant as any} className={mapping.className}>
-                                <Icon className="mr-2 h-4 w-4" />
-                                {tx.type}
-                            </Badge>
-                        </TableCell>
-                        <TableCell className="font-mono text-xs">{tx.from}</TableCell>
-                        <TableCell className="font-mono text-xs">{tx.to}</TableCell>
-                        <TableCell className="text-right font-medium tabular-nums">{tx.value}</TableCell>
-                    </TableRow>
-                )
-            })}
-          </TableBody>
+          {renderBody()}
         </Table>
       </CardContent>
     </Card>

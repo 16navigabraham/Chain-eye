@@ -46,7 +46,7 @@ export function Dashboard({ address, blockchain, onReset }: DashboardProps) {
           </div>
         </div>
 
-        <RecentTransactions />
+        <RecentTransactions address={address} blockchain={blockchain} />
       </div>
     </div>
   )
