@@ -84,7 +84,7 @@ export function RecentTransactions() {
     <Card>
       <CardHeader>
         <CardTitle>Recent Transactions</CardTitle>
-        <CardDescription>A log of the most recent transactions.</CardDescription>
+        <CardDescription>A log of the most recent transactions from on-chain data.</CardDescription>
       </CardHeader>
       <CardContent>
         <Table>
@@ -98,7 +98,7 @@ export function RecentTransactions() {
           </TableHeader>
           <TableBody>
             {transactions.map((tx) => {
-                const mapping = typeMapping[tx.type as keyof typeof typeMapping];
+                const mapping = typeMapping[tx.type as keyof typeof typeMapping] || typeMapping.Contract;
                 const Icon = mapping.icon;
                 return (
                     <TableRow key={tx.hash}>
