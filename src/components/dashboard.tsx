@@ -14,6 +14,7 @@ import { RiskAnalysis } from "@/components/risk-analysis"
 import { useToast } from "@/hooks/use-toast"
 import { NftGallery } from "./nft-gallery"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "./ui/tabs"
+import { Chatbot } from "./chatbot"
 
 
 interface DashboardProps {
@@ -111,6 +112,7 @@ export function Dashboard({ address, blockchain, onReset }: DashboardProps) {
         
         <RecentTransactions transactions={transactions?.slice(0, 10) ?? null} isLoading={isLoading} address={address} />
       </div>
+      <Chatbot address={address} blockchain={blockchain} />
     </div>
   )
 }
