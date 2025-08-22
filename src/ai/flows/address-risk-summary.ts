@@ -38,11 +38,11 @@ const getTransactionsTool = ai.defineTool(
   async (input) => {
     console.log(`Using getTransactionHistory tool for address: ${input.address} on ${input.blockchain}`);
     try {
-      // We are limiting to the first 10 transactions for this example to keep the prompt concise.
-      const transactions = (await getTransactionList(input.address, input.blockchain)).slice(0, 10);
+      // We are limiting to the first 100 transactions for this example.
+      const transactions = await getTransactionList(input.address, input.blockchain);
       return transactions;
     } catch (e) {
-      console.error(e);
+      console.error("Error in getTransactionHistory tool:", e);
       // It's better to return an empty array than to throw an error and fail the whole flow.
       // The LLM can then reason about the lack of data.
       return [];
@@ -53,7 +53,7 @@ const getTransactionsTool = ai.defineTool(
 const getTokensTool = ai.defineTool(
   {
     name: 'getTokenHoldings',
-    description: 'Get the list of tokens held by a given cryptocurrency address on a specific blockchain.',
+    description: 'Get the list of unique tokens held by a given cryptocurrency address on a specific blockchain.',
     inputSchema: z.object({
       address: z.string().describe('The cryptocurrency address.'),
       blockchain: z.string().describe('The blockchain network (e.g., ethereum, base_mainnet).'),
@@ -66,7 +66,7 @@ const getTokensTool = ai.defineTool(
       const tokens = await getTokenList(input.address, input.blockchain);
       return tokens;
     } catch (e) {
-      console.error(e);
+      console.error("Error in getTokenHoldings tool:", e);
       return [];
     }
   }
@@ -82,25 +82,27 @@ const prompt = ai.definePrompt({
   input: {schema: AddressRiskSummaryInputSchema},
   output: {schema: AddressRiskSummaryOutputSchema},
   tools: [getTransactionsTool, getTokensTool],
-  prompt: `You are an expert in cryptocurrency risk analysis.
+  prompt: `You are a senior cryptocurrency risk analyst. Your task is to provide a concise, expert risk assessment of a given crypto address.
 
-You will analyze the given cryptocurrency address on the specified blockchain and provide a summary of the potential risks associated with it.
+You MUST use the provided tools to fetch on-chain data. Your entire analysis will be based on the output of these tools.
 
-Use the provided tools to fetch the latest transactions and token holdings for the address on its blockchain. Analyze this data to identify risks.
-Consider factors like transaction history, velocity, contract interactions, token holdings, and any known associations with illicit activities.
+Follow these steps precisely:
+1.  Call the \`getTransactionHistory\` and \`getTokenHoldings\` tools for the given address and blockchain.
+2.  Analyze the results from the tools.
+3.  Formulate a risk summary that starts with one of three classifications: "Low Risk:", "Medium Risk:", or "High Risk:".
 
-If the getTransactionHistory tool returns an empty array, it means NO transactions were found. In this specific case, state that no transactions were found for the address and that the risk is likely low due to inactivity.
+**Analysis Rules:**
 
-If transaction history is available, mention key details in your summary. Look at the token holdings from the getTokenHoldings tool to see if there are any unusual or high-risk tokens.
+*   **If \`getTransactionHistory\` returns an empty array \`[]\`:** This means NO transactions were found. Your summary MUST state that no transactions were found and conclude the address is likely "Low Risk" due to inactivity. Do NOT state that you were unable to retrieve data.
+*   **If transaction history IS available:** Analyze it for risks. Consider transaction volume, frequency, and interactions with known high-risk contracts (though you don't have a list of those, you can infer risk from patterns). Mention key details.
+*   **If \`getTokenHoldings\` returns an empty array \`[]\`:** Mention that no tokens were found.
+*   **If tokens ARE found:** Mention any tokens that might be considered unusual or high-risk (memecoins, unknown tokens).
+*   **If BOTH tools return empty arrays \`[]\`:** State that you were unable to retrieve any on-chain data for the address and therefore cannot perform a risk analysis. This is the ONLY case where you should state data retrieval failed.
 
-If an error occurs and you cannot retrieve data from the tools, state that you were unable to retrieve transaction data and cannot perform a full analysis.
+Your final output must be a single summary string.
 
-Your summary should start with an immediate risk level assessment: "Low Risk:", "Medium Risk:", or "High Risk:".
-
-Address: {{{address}}}
-Blockchain: {{{blockchain}}}
-
-Summary:`,
+**Address:** {{{address}}}
+**Blockchain:** {{{blockchain}}}`,
 });
 
 const addressRiskSummaryFlow = ai.defineFlow(

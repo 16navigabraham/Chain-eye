@@ -18,7 +18,8 @@ export interface Transaction {
   cumulativeGasUsed: string;
   gasUsed: string;
   confirmations: string;
-  functionName?: string; // Optional: can be decoded later
+  functionName?: string;
+  input: string;
 }
 
 export interface Token {
@@ -27,7 +28,7 @@ export interface Token {
     decimals: string;
     name: string;
     symbol: string;
-    type: string; // ERC-20, ERC-721, etc.
+    type: string;
 }
 
 
@@ -71,7 +72,7 @@ async function makeApiRequest(chain: string, params: Record<string, string>): Pr
     const { apiUrl, apiKey } = config;
 
     if (!apiKey) {
-        throw new Error(`API key for ${chain} is not configured.`);
+        throw new Error(`API key for ${chain} is not configured. Please add it to your .env file.`);
     }
 
     const searchParams = new URLSearchParams({
@@ -82,23 +83,28 @@ async function makeApiRequest(chain: string, params: Record<string, string>): Pr
     try {
         const response = await fetch(`${apiUrl}?${searchParams.toString()}`);
         if (!response.ok) {
-        throw new Error(`API request to ${chain} failed with status ${response.status}`);
+            console.error(`API request to ${chain} failed with status ${response.status}:`, await response.text());
+            throw new Error(`API request to ${chain} failed with status ${response.status}`);
         }
         const data = await response.json();
         
-        // Etherscan API returns status '0' for errors or empty results, with a message.
         if (data.status === '0') {
-            // "No transactions found" is a valid empty state, not an error.
-            if (data.message && data.message.toLowerCase().includes('no transactions found')) {
+             // "No transactions found" is a valid empty state, not a critical error.
+            if (data.message && (data.message.toLowerCase().includes('no transactions found') || data.message.toLowerCase().includes('no records found'))) {
                 return [];
             }
-             // For other messages, we'll treat it as an empty result for the AI to handle.
-            console.log(`API for ${chain} returned status 0: ${data.message}`);
-            return [];
+            // For other messages like invalid API key, we should throw an error.
+            console.error(`API for ${chain} returned an error: ${data.message} - ${data.result}`);
+            // Provide a more specific error message.
+            if (data.result && typeof data.result === 'string' && data.result.toLowerCase().includes('invalid api key')) {
+                 throw new Error(`Invalid API Key for ${chain}. Please check your .env configuration.`);
+            }
+            throw new Error(`API Error on ${chain}: ${data.message}`);
         }
         return data.result;
     } catch (error) {
         console.error(`Failed to fetch from ${chain}:`, error);
+        // Re-throw the error to be handled by the caller (e.g., the AI tool)
         throw error;
     }
 }
@@ -111,31 +117,23 @@ async function makeApiRequest(chain: string, params: Record<string, string>): Pr
  * @returns A promise that resolves to the list of transactions.
  */
 export async function getTransactionList(address: string, chain: string): Promise<Transaction[]> {
-  return makeApiRequest(chain, {
+  const result = await makeApiRequest(chain, {
     module: 'account',
     action: 'txlist',
     address: address,
     startblock: '0',
     endblock: '99999999',
     page: '1',
-    offset: '100', // Get last 100 transactions
+    offset: '1000', // Get last 1000 transactions to get a better sense of activity
     sort: 'desc',
   });
+  return Array.isArray(result) ? result : [];
 }
 
 /**
  * Fetches the list of ERC20 tokens held by an address.
- * Note: This is a PRO endpoint on Etherscan, may not work on free tier.
- * Using an alternative for wider compatibility may be needed.
- * For now, we assume it might work or return a specific error.
  */
 export async function getTokenList(address: string, chain: string): Promise<Token[]> {
-    // Etherscan-like APIs do not have a direct 'tokenlist' action.
-    // The standard way is to get 'tokentx' and derive holdings, which is complex.
-    // Some providers like Covalent or Moralis offer this directly.
-    // We will simulate this by fetching token transfers and creating a list of unique tokens.
-    // This is a simplified approach. A full implementation would need to calculate balances.
-    
     const tokenTxs = await makeApiRequest(chain, {
         module: 'account',
         action: 'tokentx',
@@ -148,18 +146,19 @@ export async function getTokenList(address: string, chain: string): Promise<Toke
     });
 
     if (!Array.isArray(tokenTxs)) {
+        console.warn(`Expected an array of token transactions, but got:`, tokenTxs);
         return [];
     }
     
     const uniqueTokens = new Map<string, Token>();
     tokenTxs.forEach((tx: any) => {
-        if (!uniqueTokens.has(tx.contractAddress)) {
+        if (tx.contractAddress && !uniqueTokens.has(tx.contractAddress)) {
             uniqueTokens.set(tx.contractAddress, {
                 contractAddress: tx.contractAddress,
                 name: tx.tokenName,
                 symbol: tx.tokenSymbol,
                 decimals: tx.tokenDecimal,
-                balance: '0', // Note: Balance calculation requires more logic
+                balance: '0', // Note: Balance calculation is not performed in this simple version
                 type: 'ERC-20', // Assuming ERC-20 from tokentx
             });
         }
