@@ -66,7 +66,10 @@ You will analyze the given cryptocurrency address on the specified blockchain an
 
 Use the getTransactionHistory tool to fetch the latest transactions for the address on its blockchain. Analyze this data to identify risks.
 Consider factors like transaction history, velocity, contract interactions, token holdings, and any known associations with illicit activities.
-If transaction history is available, mention key details in your summary. If it is not available or an error occurs, state that you were unable to retrieve transaction data.
+
+If the getTransactionHistory tool returns an empty array, it means NO transactions were found. In this specific case, state that no transactions were found for the address and that the risk is likely low due to inactivity.
+
+If transaction history is available, mention key details in your summary. If an error occurs and you cannot retrieve data, state that you were unable to retrieve transaction data and cannot perform a full analysis.
 
 Your summary should start with an immediate risk level assessment: "Low Risk:", "Medium Risk:", or "High Risk:".
 
