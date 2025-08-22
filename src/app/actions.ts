@@ -1,8 +1,8 @@
 "use server";
 
 import { getAddressRiskSummary, type AddressRiskSummaryInput } from '@/ai/flows/address-risk-summary';
-import { getTransactionList } from '@/services/etherscan';
-import type { Transaction } from '@/services/etherscan';
+import { getTokenList, getTransactionList } from '@/services/etherscan';
+import type { Token, Transaction } from '@/services/etherscan';
 
 
 export async function generateRiskSummary(input: AddressRiskSummaryInput): Promise<{ success: boolean; summary?: string; error?: string }> {
@@ -22,10 +22,21 @@ export async function generateRiskSummary(input: AddressRiskSummaryInput): Promi
 export async function getTransactions(address: string, blockchain: string): Promise<{ success: boolean; transactions?: Transaction[]; error?: string }> {
   try {
     const transactions = await getTransactionList(address, blockchain);
-    return { success: true, transactions: transactions.slice(0, 10) }; // Return top 10 recent
+    return { success: true, transactions: transactions.slice(0, 100) }; // Return top 100 recent
   } catch (e) {
     console.error(e);
     const errorMessage = e instanceof Error ? e.message : 'An unknown error occurred.';
     return { success: false, error: `Failed to fetch transactions: ${errorMessage}.` };
+  }
+}
+
+export async function getTokens(address: string, blockchain: string): Promise<{ success: boolean; tokens?: Token[]; error?: string }> {
+  try {
+    const tokens = await getTokenList(address, blockchain);
+    return { success: true, tokens };
+  } catch (e) {
+    console.error(e);
+    const errorMessage = e instanceof Error ? e.message : 'An unknown error occurred.';
+    return { success: false, error: `Failed to fetch tokens: ${errorMessage}.` };
   }
 }

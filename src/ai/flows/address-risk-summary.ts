@@ -10,7 +10,7 @@
 
 import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
-import { getTransactionList } from '@/services/etherscan';
+import { getTransactionList, getTokenList } from '@/services/etherscan';
 
 const AddressRiskSummaryInputSchema = z.object({
   address: z
@@ -50,6 +50,28 @@ const getTransactionsTool = ai.defineTool(
   }
 );
 
+const getTokensTool = ai.defineTool(
+  {
+    name: 'getTokenHoldings',
+    description: 'Get the list of tokens held by a given cryptocurrency address on a specific blockchain.',
+    inputSchema: z.object({
+      address: z.string().describe('The cryptocurrency address.'),
+      blockchain: z.string().describe('The blockchain network (e.g., ethereum, base_mainnet).'),
+    }),
+    outputSchema: z.array(z.any()),
+  },
+  async (input) => {
+    console.log(`Using getTokenHoldings tool for address: ${input.address} on ${input.blockchain}`);
+    try {
+      const tokens = await getTokenList(input.address, input.blockchain);
+      return tokens;
+    } catch (e) {
+      console.error(e);
+      return [];
+    }
+  }
+);
+
 
 export async function getAddressRiskSummary(input: AddressRiskSummaryInput): Promise<AddressRiskSummaryOutput> {
   return addressRiskSummaryFlow(input);
@@ -59,17 +81,19 @@ const prompt = ai.definePrompt({
   name: 'addressRiskSummaryPrompt',
   input: {schema: AddressRiskSummaryInputSchema},
   output: {schema: AddressRiskSummaryOutputSchema},
-  tools: [getTransactionsTool],
+  tools: [getTransactionsTool, getTokensTool],
   prompt: `You are an expert in cryptocurrency risk analysis.
 
 You will analyze the given cryptocurrency address on the specified blockchain and provide a summary of the potential risks associated with it.
 
-Use the getTransactionHistory tool to fetch the latest transactions for the address on its blockchain. Analyze this data to identify risks.
+Use the provided tools to fetch the latest transactions and token holdings for the address on its blockchain. Analyze this data to identify risks.
 Consider factors like transaction history, velocity, contract interactions, token holdings, and any known associations with illicit activities.
 
 If the getTransactionHistory tool returns an empty array, it means NO transactions were found. In this specific case, state that no transactions were found for the address and that the risk is likely low due to inactivity.
 
-If transaction history is available, mention key details in your summary. If an error occurs and you cannot retrieve data, state that you were unable to retrieve transaction data and cannot perform a full analysis.
+If transaction history is available, mention key details in your summary. Look at the token holdings from the getTokenHoldings tool to see if there are any unusual or high-risk tokens.
+
+If an error occurs and you cannot retrieve data from the tools, state that you were unable to retrieve transaction data and cannot perform a full analysis.
 
 Your summary should start with an immediate risk level assessment: "Low Risk:", "Medium Risk:", or "High Risk:".
 

@@ -1,9 +1,5 @@
 "use client"
 
-import { useEffect, useState } from "react"
-import { getTransactions } from "@/app/actions"
-import type { Transaction } from "@/services/etherscan"
-
 import {
   Card,
   CardContent,
@@ -21,12 +17,13 @@ import {
 } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
 import { Skeleton } from "@/components/ui/skeleton"
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
-import { ArrowDownLeft, ArrowUpRight, FileText, XCircle, AlertTriangle } from "lucide-react"
+import { ArrowDownLeft, ArrowUpRight, FileText, XCircle } from "lucide-react"
+import type { Transaction } from "@/services/etherscan"
 
 interface RecentTransactionsProps {
   address: string;
-  blockchain: string;
+  transactions: Transaction[] | null;
+  isLoading: boolean;
 }
 
 const typeMapping = {
@@ -52,26 +49,8 @@ const typeMapping = {
     }
 };
 
-export function RecentTransactions({ address, blockchain }: RecentTransactionsProps) {
-  const [transactions, setTransactions] = useState<Transaction[] | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+export function RecentTransactions({ address, transactions, isLoading }: RecentTransactionsProps) {
 
-  useEffect(() => {
-    const fetchTransactions = async () => {
-      setIsLoading(true);
-      setError(null);
-      const result = await getTransactions(address, blockchain);
-      if (result.success && result.transactions) {
-        setTransactions(result.transactions);
-      } else {
-        setError(result.error || "An unknown error occurred.");
-      }
-      setIsLoading(false);
-    };
-    fetchTransactions();
-  }, [address, blockchain]);
-  
   const renderBody = () => {
     if (isLoading) {
       return (
@@ -83,22 +62,6 @@ export function RecentTransactions({ address, blockchain }: RecentTransactionsPr
               </TableCell>
             </TableRow>
           ))}
-        </TableBody>
-      );
-    }
-
-    if (error) {
-      return (
-        <TableBody>
-          <TableRow>
-            <TableCell colSpan={4}>
-              <Alert variant="destructive">
-                <AlertTriangle className="h-4 w-4" />
-                <AlertTitle>Error Fetching Transactions</AlertTitle>
-                <AlertDescription>{error}</AlertDescription>
-              </Alert>
-            </TableCell>
-          </TableRow>
         </TableBody>
       );
     }
