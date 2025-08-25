@@ -22,6 +22,8 @@ import { ArrowDownLeft, ArrowUpRight, FileText, XCircle } from "lucide-react"
 import type { Transaction } from "@/services/etherscan"
 import { getTransactions } from "@/app/actions"
 import { useToast } from "@/hooks/use-toast"
+import { formatDistanceToNow } from 'date-fns'
+
 
 interface RecentTransactionsProps {
   address: string;
@@ -83,7 +85,7 @@ export function RecentTransactions({ address, blockchain }: RecentTransactionsPr
         <TableBody>
           {[...Array(10)].map((_, i) => (
             <TableRow key={i}>
-              <TableCell colSpan={4}>
+              <TableCell colSpan={5}>
                 <Skeleton className="h-8 w-full" />
               </TableCell>
             </TableRow>
@@ -96,7 +98,7 @@ export function RecentTransactions({ address, blockchain }: RecentTransactionsPr
        return (
         <TableBody>
           <TableRow>
-            <TableCell colSpan={4} className="text-center">
+            <TableCell colSpan={5} className="text-center">
               No recent transactions found.
             </TableCell>
           </TableRow>
@@ -121,6 +123,7 @@ export function RecentTransactions({ address, blockchain }: RecentTransactionsPr
 
           const mapping = typeMapping[type as keyof typeof typeMapping];
           const Icon = mapping.icon;
+          const txDate = new Date(parseInt(tx.timeStamp) * 1000);
           
           return (
             <TableRow key={tx.hash}>
@@ -132,8 +135,15 @@ export function RecentTransactions({ address, blockchain }: RecentTransactionsPr
               </TableCell>
               <TableCell className="font-mono text-xs truncate" style={{maxWidth: '150px'}}>{tx.from}</TableCell>
               <TableCell className="font-mono text-xs truncate" style={{maxWidth: '150px'}}>{tx.to}</TableCell>
-              <TableCell className="text-right font-medium tabular-nums">
-                {(parseInt(tx.value) / 1e18).toFixed(6)} ETH
+               <TableCell className="text-right">
+                <div className="font-medium tabular-nums">
+                    {(parseInt(tx.value) / 1e18).toFixed(6)} ETH
+                </div>
+              </TableCell>
+              <TableCell className="text-right text-xs text-muted-foreground">
+                 <div title={txDate.toLocaleString()}>
+                    {formatDistanceToNow(txDate, { addSuffix: true })}
+                 </div>
               </TableCell>
             </TableRow>
           );
@@ -156,6 +166,7 @@ export function RecentTransactions({ address, blockchain }: RecentTransactionsPr
               <TableHead>From</TableHead>
               <TableHead>To</TableHead>
               <TableHead className="text-right">Value</TableHead>
+              <TableHead className="text-right">Date</TableHead>
             </TableRow>
           </TableHeader>
           {renderBody()}
