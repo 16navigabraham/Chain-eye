@@ -65,7 +65,7 @@ export function TokenHoldings({ address, blockchain }: TokenHoldingsProps) {
     // For this example, we chart the balance itself. A real app would need a price feed.
     // Filter top 5 by balance for a cleaner chart.
     .sort((a,b) => b.value - a.value)
-    .slice(0, 5);
+    .slice(0, 10);
 
 
   const renderBody = () => {
@@ -74,7 +74,7 @@ export function TokenHoldings({ address, blockchain }: TokenHoldingsProps) {
          <div className="space-y-4">
           <Skeleton className="h-64 w-full" />
            <div className="space-y-2">
-              {[...Array(3)].map((_, i) => <Skeleton key={i} className="h-12 w-full" />)}
+              {[...Array(5)].map((_, i) => <Skeleton key={i} className="h-12 w-full" />)}
            </div>
          </div>
       )
@@ -105,7 +105,7 @@ export function TokenHoldings({ address, blockchain }: TokenHoldingsProps) {
                 <BarChart data={chartData} margin={{ top: 5, right: 20, left: -10, bottom: 5 }}>
                     <CartesianGrid strokeDasharray="3 3" vertical={false} />
                     <XAxis dataKey="name" stroke="hsl(var(--muted-foreground))" fontSize={12} tickLine={false} axisLine={false} />
-                    <YAxis stroke="hsl(var(--muted-foreground))" fontSize={12} tickLine={false} axisLine={false} tickFormatter={(value) => `${Number(value).toFixed(2)}`} />
+                    <YAxis stroke="hsl(var(--muted-foreground))" fontSize={12} tickLine={false} axisLine={false} tickFormatter={(value) => `${Number(value).toExponential(2)}`} />
                     <Tooltip
                         cursor={{ fill: 'hsl(var(--accent))' }}
                         contentStyle={{
@@ -113,6 +113,7 @@ export function TokenHoldings({ address, blockchain }: TokenHoldingsProps) {
                             border: '1px solid hsl(var(--border))',
                             borderRadius: 'var(--radius)',
                         }}
+                         formatter={(value: number) => value.toLocaleString(undefined, {minimumFractionDigits: 4, maximumFractionDigits: 8})}
                     />
                     <Bar dataKey="value" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
                 </BarChart>
@@ -146,7 +147,7 @@ export function TokenHoldings({ address, blockchain }: TokenHoldingsProps) {
                   </div>
                 </TableCell>
                 <TableCell className="text-right tabular-nums">
-                    {(parseFloat(holding.balance) / (10 ** parseInt(holding.decimals))).toLocaleString(undefined, {minimumFractionDigits: 4, maximumFractionDigits: 4})}
+                    {(parseFloat(holding.balance) / (10 ** parseInt(holding.decimals))).toLocaleString(undefined, {minimumFractionDigits: 4, maximumFractionDigits: 8})}
                 </TableCell>
                 <TableCell className="text-right">
                   <Badge variant="outline">{holding.symbol}</Badge>

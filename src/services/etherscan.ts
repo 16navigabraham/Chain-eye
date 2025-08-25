@@ -81,7 +81,7 @@ async function makeApiRequest(chain: string, params: Record<string, string>): Pr
             }
             console.error(`API for ${chain} returned an error: ${data.message} - ${data.result}`);
             if (data.result && typeof data.result === 'string' && data.result.toLowerCase().includes('invalid api key')) {
-                 throw new Error(`Invalid Etherscan API Key. Please check your .env configuration.`);
+                 throw new Error(`Invalid Etherscan API Key for ${chain}. Please check your .env configuration.`);
             }
             throw new Error(`API Error on ${chain}: ${data.message}`);
         }
@@ -123,6 +123,7 @@ export async function getTransactionList(address: string, chain: string): Promis
  */
 export async function getTokenList(address: string, chain: string): Promise<Token[]> {
     try {
+        // 1. Discover all tokens the address has interacted with
         const tokenTxs = await makeApiRequest(chain, {
             module: 'account',
             action: 'tokentx',
@@ -130,7 +131,7 @@ export async function getTokenList(address: string, chain: string): Promise<Toke
             startblock: '0',
             endblock: '99999999',
             page: '1',
-            offset: '1000', // Check a good number of transfers to find all tokens
+            offset: '1000', 
             sort: 'desc',
         });
 
@@ -147,13 +148,39 @@ export async function getTokenList(address: string, chain: string): Promise<Toke
                     name: tx.tokenName,
                     symbol: tx.tokenSymbol,
                     decimals: tx.tokenDecimal,
-                    balance: '0', // Note: Balance calculation is not performed in this simple version
-                    type: 'ERC-20', // Assuming ERC-20 from tokentx
+                    balance: '0', // Will be fetched next
+                    type: 'ERC-20',
                 });
             }
         });
 
-        return Array.from(uniqueTokens.values());
+        // 2. Fetch balance for each unique token
+        const tokensWithBalances: Token[] = await Promise.all(
+            Array.from(uniqueTokens.values()).map(async (token) => {
+                try {
+                    const balanceResult = await makeApiRequest(chain, {
+                        module: 'account',
+                        action: 'tokenbalance',
+                        contractaddress: token.contractAddress,
+                        address: address,
+                        tag: 'latest',
+                    });
+                    
+                    // Only update balance if it's not zero, to avoid showing tokens they no longer hold.
+                    if (balanceResult && balanceResult !== '0') {
+                       return { ...token, balance: balanceResult };
+                    }
+                    return null; // Return null for tokens with zero balance
+                } catch (e) {
+                    console.error(`Could not fetch balance for ${token.symbol} (${token.contractAddress}):`, e);
+                    return null; // Return null if balance fetch fails
+                }
+            })
+        );
+        
+        // Filter out null values (tokens with zero balance or fetch errors)
+        return tokensWithBalances.filter((token): token is Token => token !== null);
+
     } catch(e) {
         console.error("Error in getTokenList:", e);
         return [];
