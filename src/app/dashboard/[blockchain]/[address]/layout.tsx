@@ -29,9 +29,10 @@ const navigation = [
     { name: "Contracts", href: "/contracts", icon: Landmark },
 ]
 
-export default function DashboardLayout({ children, params: { address, blockchain } }: DashboardLayoutProps) {
+export default function DashboardLayout({ children, params }: DashboardLayoutProps) {
   const router = useRouter()
   const pathname = usePathname()
+  const { address, blockchain } = params
   
   const handleReset = () => {
     router.push('/')
