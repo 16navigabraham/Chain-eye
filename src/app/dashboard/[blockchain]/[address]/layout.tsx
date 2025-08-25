@@ -6,6 +6,7 @@ import {
   Coins,
   ImageIcon,
   LogOut,
+  Landmark
 } from "lucide-react"
 import Link from "next/link"
 import { usePathname, useRouter } from 'next/navigation'
@@ -25,6 +26,7 @@ const navigation = [
     { name: "Tokens", href: "/tokens", icon: Coins },
     { name: "Transactions", href: "/transactions", icon: ArrowRightLeft },
     { name: "NFTs", href: "/nfts", icon: ImageIcon },
+    { name: "Contracts", href: "/contracts", icon: Landmark },
 ]
 
 export default function DashboardLayout({ children, params }: DashboardLayoutProps) {
