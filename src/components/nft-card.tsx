@@ -9,9 +9,15 @@ interface NftCardProps {
 }
 
 export function NftCard({ nft }: NftCardProps) {
-  // A real implementation would fetch metadata and get the image URL.
-  // For now, we use a generic placeholder as we don't have a metadata service.
-  const imageUrl = "https://placehold.co/500x500.png";
+  // Use a proxy to try and fetch the NFT image.
+  // This is a much simpler approach than a full client-side web3 implementation.
+  // We are using a public service; in a production app, you'd use a dedicated service with an API key.
+  const imageUrl = `https://images.covalenthq.com/images/8453/${nft.contractAddress}/${nft.tokenID}.png`;
+  const fallbackUrl = "https://placehold.co/500x500.png";
+
+  const handleError = (e: React.SyntheticEvent<HTMLImageElement, Event>) => {
+    e.currentTarget.src = fallbackUrl;
+  };
 
   return (
     <Card className="overflow-hidden">
@@ -22,12 +28,13 @@ export function NftCard({ nft }: NftCardProps) {
                 alt={`Image of ${nft.tokenName}`}
                 layout="fill"
                 objectFit="cover"
+                onError={handleError}
             />
         </div>
       </CardContent>
       <CardFooter className="flex flex-col items-start p-4">
         <p className="text-sm font-semibold text-primary truncate w-full" title={nft.tokenName}>
-          {nft.tokenName}
+          {nft.tokenName || "Unnamed NFT"}
         </p>
         <p className="text-xs text-muted-foreground">
           ID: {nft.tokenID}
