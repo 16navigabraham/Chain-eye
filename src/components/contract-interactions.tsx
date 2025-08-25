@@ -1,5 +1,6 @@
 "use client"
 
+import { useState, useEffect } from "react"
 import {
   Card,
   CardContent,
@@ -18,10 +19,12 @@ import {
 import { Badge } from "@/components/ui/badge"
 import { Skeleton } from "@/components/ui/skeleton"
 import type { Transaction } from "@/services/etherscan"
+import { getTransactions } from "@/app/actions"
+import { useToast } from "@/hooks/use-toast"
 
 interface ContractInteractionsProps {
-    transactions: Transaction[] | null;
-    isLoading: boolean;
+    address: string;
+    blockchain: string;
 }
 
 interface Interaction {
@@ -32,7 +35,32 @@ interface Interaction {
     name: string; // This would require reverse lookup or ABI decoding, defaulting to address
 }
 
-export function ContractInteractions({ transactions, isLoading }: ContractInteractionsProps) {
+export function ContractInteractions({ address, blockchain }: ContractInteractionsProps) {
+  const [transactions, setTransactions] = useState<Transaction[] | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const { toast } = useToast();
+  
+  useEffect(() => {
+    const fetchAllData = async () => {
+      setIsLoading(true);
+      
+      const txResult = await getTransactions(address, blockchain);
+      if (txResult.success && txResult.transactions) {
+        setTransactions(txResult.transactions);
+      } else {
+         toast({
+          variant: "destructive",
+          title: "Failed to Fetch Transactions",
+          description: txResult.error || "Could not load transaction history.",
+        })
+      }
+      
+      setIsLoading(false);
+    };
+
+    fetchAllData();
+  }, [address, blockchain, toast]);
+
 
   const interactionMap = (transactions ?? [])
     .filter(tx => tx.to && tx.input !== "0x") // Filter for contract interactions

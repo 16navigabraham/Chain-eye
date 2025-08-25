@@ -1,15 +1,41 @@
 "use client"
 
+import { useState, useEffect } from "react"
 import type { Nft } from "@/services/etherscan"
 import { Skeleton } from "@/components/ui/skeleton"
 import { NftCard } from "./nft-card"
+import { getNfts } from "@/app/actions"
+import { useToast } from "@/hooks/use-toast"
 
 interface NftGalleryProps {
-  nfts: Nft[] | null
-  isLoading: boolean
+  address: string
+  blockchain: string
 }
 
-export function NftGallery({ nfts, isLoading }: NftGalleryProps) {
+export function NftGallery({ address, blockchain }: NftGalleryProps) {
+  const [nfts, setNfts] = useState<Nft[] | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const { toast } = useToast();
+
+  useEffect(() => {
+    const fetchNfts = async () => {
+      setIsLoading(true);
+      const nftResult = await getNfts(address, blockchain);
+       if (nftResult.success && nftResult.nfts) {
+        setNfts(nftResult.nfts);
+      } else {
+         toast({
+          variant: "destructive",
+          title: "Failed to Fetch NFTs",
+          description: nftResult.error || "Could not load NFT holdings.",
+        })
+      }
+      setIsLoading(false);
+    };
+
+    fetchNfts();
+  }, [address, blockchain, toast]);
+
 
   if (isLoading) {
     return (

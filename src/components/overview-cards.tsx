@@ -1,20 +1,60 @@
 "use client"
 
+import { useEffect, useState } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { ArrowDown, ArrowUp, ArrowRightLeft, Landmark, Image as ImageIcon } from "lucide-react"
+import { ArrowUp, ArrowRightLeft, Landmark, Image as ImageIcon } from "lucide-react"
 import { Skeleton } from "@/components/ui/skeleton"
 import type { Transaction, Nft } from "@/services/etherscan"
+import { getTransactions, getNfts } from "@/app/actions"
+import { useToast } from "@/hooks/use-toast"
 
 interface OverviewCardsProps {
-    transactions: Transaction[] | null;
-    nfts: Nft[] | null;
-    isLoading: boolean;
-    isLoadingNfts: boolean;
     address: string;
+    blockchain: string;
 }
 
-export function OverviewCards({ transactions, nfts, isLoading, isLoadingNfts, address }: OverviewCardsProps) {
+export function OverviewCards({ address, blockchain }: OverviewCardsProps) {
+  const [transactions, setTransactions] = useState<Transaction[] | null>(null);
+  const [nfts, setNfts] = useState<Nft[] | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isLoadingNfts, setIsLoadingNfts] = useState(true);
+  const { toast } = useToast();
   
+  useEffect(() => {
+    const fetchTxs = async () => {
+      setIsLoading(true);
+      const txResult = await getTransactions(address, blockchain);
+      if (txResult.success && txResult.transactions) {
+        setTransactions(txResult.transactions);
+      } else {
+         toast({
+          variant: "destructive",
+          title: "Failed to Fetch Transactions",
+          description: txResult.error || "Could not load transaction history.",
+        })
+      }
+      setIsLoading(false);
+    };
+
+    const fetchNfts = async () => {
+      setIsLoadingNfts(true);
+      const nftResult = await getNfts(address, blockchain);
+       if (nftResult.success && nftResult.nfts) {
+        setNfts(nftResult.nfts);
+      } else {
+         toast({
+          variant: "destructive",
+          title: "Failed to Fetch NFTs",
+          description: nftResult.error || "Could not load NFT holdings.",
+        })
+      }
+      setIsLoadingNfts(false);
+    };
+
+    fetchTxs();
+    fetchNfts();
+  }, [address, blockchain, toast]);
+
   const stats = [
     {
       title: "Total Transactions",

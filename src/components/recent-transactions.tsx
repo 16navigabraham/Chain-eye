@@ -1,5 +1,6 @@
 "use client"
 
+import { useState, useEffect } from "react"
 import {
   Card,
   CardContent,
@@ -19,11 +20,12 @@ import { Badge } from "@/components/ui/badge"
 import { Skeleton } from "@/components/ui/skeleton"
 import { ArrowDownLeft, ArrowUpRight, FileText, XCircle } from "lucide-react"
 import type { Transaction } from "@/services/etherscan"
+import { getTransactions } from "@/app/actions"
+import { useToast } from "@/hooks/use-toast"
 
 interface RecentTransactionsProps {
   address: string;
-  transactions: Transaction[] | null;
-  isLoading: boolean;
+  blockchain: string;
 }
 
 const typeMapping = {
@@ -49,7 +51,31 @@ const typeMapping = {
     }
 };
 
-export function RecentTransactions({ address, transactions, isLoading }: RecentTransactionsProps) {
+export function RecentTransactions({ address, blockchain }: RecentTransactionsProps) {
+  const [transactions, setTransactions] = useState<Transaction[] | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const { toast } = useToast();
+  
+  useEffect(() => {
+    const fetchAllData = async () => {
+      setIsLoading(true);
+      
+      const txResult = await getTransactions(address, blockchain);
+      if (txResult.success && txResult.transactions) {
+        setTransactions(txResult.transactions);
+      } else {
+         toast({
+          variant: "destructive",
+          title: "Failed to Fetch Transactions",
+          description: txResult.error || "Could not load transaction history.",
+        })
+      }
+      
+      setIsLoading(false);
+    };
+
+    fetchAllData();
+  }, [address, blockchain, toast]);
 
   const renderBody = () => {
     if (isLoading) {

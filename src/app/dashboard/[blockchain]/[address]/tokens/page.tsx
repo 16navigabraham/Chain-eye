@@ -1,5 +1,3 @@
-"use client"
-
 import { TokenHoldings } from "@/components/token-holdings"
 
 interface TokensPageProps {
