@@ -38,9 +38,9 @@ export default function DashboardLayout({ children, params }: DashboardLayoutPro
 
   return (
     <div className="grid min-h-screen w-full md:grid-cols-[220px_1fr] lg:grid-cols-[280px_1fr]">
-      <div className="hidden border-r bg-muted/40 md:block">
+      <div className="hidden border-r border-white/10 bg-black/20 backdrop-blur-lg md:block">
         <div className="flex h-full max-h-screen flex-col gap-2">
-          <div className="flex h-14 items-center border-b px-4 lg:h-[60px] lg:px-6">
+          <div className="flex h-14 items-center border-b border-white/10 px-4 lg:h-[60px] lg:px-6">
             <Link href="/" className="flex items-center gap-2 font-semibold">
               <ChainEyeIcon className="h-6 w-6 text-primary" />
               <span className="">ChainEye</span>
@@ -57,7 +57,7 @@ export default function DashboardLayout({ children, params }: DashboardLayoutPro
                     href={href}
                     className={cn(
                       "flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary",
-                      isActive && "bg-muted text-primary"
+                      isActive && "bg-muted/50 text-primary"
                     )}
                   >
                     <item.icon className="h-4 w-4" />
@@ -70,7 +70,7 @@ export default function DashboardLayout({ children, params }: DashboardLayoutPro
         </div>
       </div>
       <div className="flex flex-col">
-        <header className="flex h-14 items-center gap-4 border-b bg-muted/40 px-4 lg:h-[60px] lg:px-6">
+        <header className="flex h-14 items-center gap-4 border-b border-white/10 bg-black/20 backdrop-blur-lg px-4 lg:h-[60px] lg:px-6">
            <div className="w-full flex-1">
              <p className="text-sm text-muted-foreground break-all">
                 <span className="font-semibold text-foreground">Analyzing: </span>{address}

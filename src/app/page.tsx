@@ -13,7 +13,7 @@ export default function Home() {
   };
 
   return (
-    <main className="bg-background min-h-screen">
+    <main className="min-h-screen">
         <div className="container mx-auto flex flex-col items-center justify-center min-h-screen p-4 text-center">
           <div className="flex items-center space-x-3 mb-4">
             <ChainEyeIcon className="h-12 w-12 text-primary" />
