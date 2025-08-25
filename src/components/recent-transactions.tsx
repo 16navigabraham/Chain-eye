@@ -55,7 +55,7 @@ export function RecentTransactions({ address, transactions, isLoading }: RecentT
     if (isLoading) {
       return (
         <TableBody>
-          {[...Array(5)].map((_, i) => (
+          {[...Array(10)].map((_, i) => (
             <TableRow key={i}>
               <TableCell colSpan={4}>
                 <Skeleton className="h-8 w-full" />
@@ -119,7 +119,7 @@ export function RecentTransactions({ address, transactions, isLoading }: RecentT
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Recent Transactions</CardTitle>
+        <CardTitle>Transactions</CardTitle>
         <CardDescription>A log of the most recent transactions from on-chain data.</CardDescription>
       </CardHeader>
       <CardContent>

@@ -1,24 +1,19 @@
 "use client";
 
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { AddressForm, type FormData } from '@/components/address-form';
-import { Dashboard } from '@/components/dashboard';
 import { ChainEyeIcon } from '@/components/icons';
 
 export default function Home() {
-  const [analysis, setAnalysis] = useState<{ address: string; blockchain: string } | null>(null);
+  const router = useRouter();
 
   const handleAnalyze = (data: FormData) => {
-    setAnalysis(data);
+    router.push(`/dashboard/${data.blockchain}/${data.address}`);
   };
-
-  const handleReset = () => {
-    setAnalysis(null);
-  }
 
   return (
     <main className="bg-background min-h-screen">
-      {!analysis ? (
         <div className="container mx-auto flex flex-col items-center justify-center min-h-screen p-4 text-center">
           <div className="flex items-center space-x-3 mb-4">
             <ChainEyeIcon className="h-12 w-12 text-primary" />
@@ -31,9 +26,6 @@ export default function Home() {
           </p>
           <AddressForm onAnalyze={handleAnalyze} />
         </div>
-      ) : (
-        <Dashboard address={analysis.address} blockchain={analysis.blockchain} onReset={handleReset} />
-      )}
     </main>
   );
 }
