@@ -8,22 +8,10 @@ interface NftCardProps {
   nft: Nft
 }
 
-// A very basic function to generate a placeholder image URL from a string.
-// In a real app, you would fetch metadata and get the real image URL.
-const generatePlaceholderUrl = (input: string) => {
-    const hash = input.split('').reduce((acc, char) => {
-        return char.charCodeAt(0) + ((acc << 5) - acc);
-    }, 0);
-    const color = (hash & 0x00FFFFFF).toString(16).toUpperCase();
-    const bgColor = `000000`.substring(0, 6 - color.length) + color;
-    const textColor = 'FFFFFF';
-    return `https://placehold.co/500x500/${bgColor}/${textColor}.png?text=${encodeURIComponent(input.substring(0,3))}`;
-}
-
 export function NftCard({ nft }: NftCardProps) {
-
-  // For demo, we can't fetch live metadata. We'll use placeholders.
-  const imageUrl = generatePlaceholderUrl(nft.tokenSymbol);
+  // A real implementation would fetch metadata and get the image URL.
+  // For now, we use a generic placeholder as we don't have a metadata service.
+  const imageUrl = "https://placehold.co/500x500.png";
 
   return (
     <Card className="overflow-hidden">
@@ -34,7 +22,6 @@ export function NftCard({ nft }: NftCardProps) {
                 alt={`Image of ${nft.tokenName}`}
                 layout="fill"
                 objectFit="cover"
-                data-ai-hint={`${nft.tokenName} logo`}
             />
         </div>
       </CardContent>
