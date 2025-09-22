@@ -24,7 +24,7 @@ import {
   Bar,
   XAxis,
   YAxis,
-  Tooltip,
+  Tooltip as RechartsTooltip,
   ResponsiveContainer,
   CartesianGrid
 } from "recharts"
@@ -33,7 +33,7 @@ import { Skeleton } from "@/components/ui/skeleton"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { AlertTriangle } from "lucide-react"
 import {
-  Tooltip as ShadTooltip,
+  Tooltip,
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip"
@@ -117,7 +117,7 @@ export function TokenHoldings({ address, blockchain }: TokenHoldingsProps) {
                     <CartesianGrid strokeDasharray="3 3" vertical={false} />
                     <XAxis dataKey="name" stroke="hsl(var(--muted-foreground))" fontSize={12} tickLine={false} axisLine={false} />
                     <YAxis stroke="hsl(var(--muted-foreground))" fontSize={12} tickLine={false} axisLine={false} tickFormatter={(value) => `${Number(value).toExponential(2)}`} />
-                    <Tooltip
+                    <RechartsTooltip
                         cursor={{ fill: 'hsl(var(--accent))' }}
                         contentStyle={{
                             background: 'hsl(var(--background))',
@@ -153,14 +153,14 @@ export function TokenHoldings({ address, blockchain }: TokenHoldingsProps) {
                     />
                     <div>
                       <div className="font-medium">{holding.name}</div>
-                       <ShadTooltip>
-                          <ShadTooltipTrigger asChild>
+                       <Tooltip>
+                          <TooltipTrigger asChild>
                             <div className="text-sm text-muted-foreground cursor-pointer">{holding.contractAddress.substring(0,10)}...</div>
-                          </ShadTooltipTrigger>
-                          <ShadTooltipContent>
+                          </TooltipTrigger>
+                          <TooltipContent>
                             <p>{holding.contractAddress}</p>
-                          </ShadTooltipContent>
-                        </ShadTooltip>
+                          </TooltipContent>
+                        </Tooltip>
                     </div>
                   </div>
                 </TableCell>
