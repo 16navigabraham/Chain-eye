@@ -15,6 +15,14 @@ import { Button } from "@/components/ui/button"
 import { ChainEyeIcon } from "@/components/icons"
 import { Chatbot } from "@/components/chatbot"
 import { cn } from "@/lib/utils"
+import { Badge } from "./ui/badge"
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip"
+
 
 interface DashboardClientLayoutProps {
     children: React.ReactNode;
@@ -74,9 +82,12 @@ export function DashboardClientLayout({ children, address, blockchain }: Dashboa
       <div className="flex flex-col">
         <header className="flex h-14 items-center gap-4 border-b border-white/10 bg-black/20 backdrop-blur-lg px-4 lg:h-[60px] lg:px-6">
            <div className="w-full flex-1">
-             <p className="text-sm text-muted-foreground break-all">
-                <span className="font-semibold text-foreground">Analyzing: </span>{address}
-            </p>
+             <div className="flex items-center gap-2">
+                <Badge variant="secondary" className="capitalize">{blockchain.replace('_', ' ')}</Badge>
+                <p className="text-sm text-muted-foreground font-mono">
+                    {address}
+                </p>
+            </div>
            </div>
           <Button onClick={handleReset} variant="outline" size="sm">
             <LogOut className="mr-2 h-4 w-4"/>
@@ -84,7 +95,9 @@ export function DashboardClientLayout({ children, address, blockchain }: Dashboa
           </Button>
         </header>
         <main className="flex-1 p-4 sm:p-6 lg:p-8 overflow-auto">
+          <TooltipProvider>
             {children}
+          </TooltipProvider>
         </main>
         <Chatbot address={address} blockchain={blockchain} />
       </div>

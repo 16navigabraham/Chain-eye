@@ -23,6 +23,12 @@ import type { Transaction } from "@/services/etherscan"
 import { getTransactions } from "@/app/actions"
 import { useToast } from "@/hooks/use-toast"
 import { formatDistanceToNow } from 'date-fns'
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip"
 
 
 interface RecentTransactionsProps {
@@ -52,6 +58,21 @@ const typeMapping = {
         className: "opacity-70",
     }
 };
+
+function TruncatedAddress({ address }: { address: string }) {
+  if (!address) return null;
+  const truncated = `${address.substring(0, 8)}...${address.substring(address.length - 6)}`;
+  return (
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <span className="font-mono text-xs cursor-pointer">{truncated}</span>
+      </TooltipTrigger>
+      <TooltipContent>
+        <p>{address}</p>
+      </TooltipContent>
+    </Tooltip>
+  )
+}
 
 export function RecentTransactions({ address, blockchain }: RecentTransactionsProps) {
   const [transactions, setTransactions] = useState<Transaction[] | null>(null);
@@ -133,8 +154,12 @@ export function RecentTransactions({ address, blockchain }: RecentTransactionsPr
                   {type}
                 </Badge>
               </TableCell>
-              <TableCell className="font-mono text-xs truncate" style={{maxWidth: '150px'}}>{tx.from}</TableCell>
-              <TableCell className="font-mono text-xs truncate" style={{maxWidth: '150px'}}>{tx.to}</TableCell>
+              <TableCell>
+                <TruncatedAddress address={tx.from} />
+              </TableCell>
+               <TableCell>
+                <TruncatedAddress address={tx.to} />
+              </TableCell>
                <TableCell className="text-right">
                 <div className="font-medium tabular-nums">
                     {(parseInt(tx.value) / 1e18).toFixed(6)} ETH

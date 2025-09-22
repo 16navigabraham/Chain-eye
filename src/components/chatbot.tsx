@@ -59,7 +59,7 @@ export function Chatbot({ address, blockchain }: ChatbotProps) {
     return (
         <Sheet>
             <SheetTrigger asChild>
-                <Button variant="primary" size="icon" className="fixed bottom-8 right-8 h-16 w-16 rounded-full shadow-lg">
+                <Button size="icon" className="fixed bottom-8 right-8 h-16 w-16 rounded-full shadow-lg">
                     <MessageCircle className="h-8 w-8" />
                 </Button>
             </SheetTrigger>

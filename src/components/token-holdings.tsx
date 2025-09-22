@@ -32,11 +32,22 @@ import Image from "next/image"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { AlertTriangle } from "lucide-react"
+import {
+  Tooltip as ShadTooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip"
+
 
 interface TokenHoldingsProps {
   address: string
   blockchain: string
 }
+
+const fallbackUrl = "https://placehold.co/32x32.png";
+const handleImageError = (e: React.SyntheticEvent<HTMLImageElement, Event>) => {
+    e.currentTarget.src = fallbackUrl;
+};
 
 export function TokenHoldings({ address, blockchain }: TokenHoldingsProps) {
   const [holdings, setHoldings] = useState<Token[] | null>(null)
@@ -133,16 +144,23 @@ export function TokenHoldings({ address, blockchain }: TokenHoldingsProps) {
                 <TableCell>
                   <div className="flex items-center gap-3">
                     <Image
-                      src={`https://placehold.co/32x32.png`}
-                      data-ai-hint={`${holding.name} logo`}
+                      src={`https://images.covalenthq.com/images/1/eth-mainnet/0x${holding.contractAddress.substring(2)}/logo.png`}
                       alt={`${holding.name} logo`}
                       width={32}
                       height={32}
                       className="rounded-full"
+                      onError={handleImageError}
                     />
                     <div>
                       <div className="font-medium">{holding.name}</div>
-                      <div className="text-sm text-muted-foreground">{holding.contractAddress.substring(0,10)}...</div>
+                       <ShadTooltip>
+                          <ShadTooltipTrigger asChild>
+                            <div className="text-sm text-muted-foreground cursor-pointer">{holding.contractAddress.substring(0,10)}...</div>
+                          </ShadTooltipTrigger>
+                          <ShadTooltipContent>
+                            <p>{holding.contractAddress}</p>
+                          </ShadTooltipContent>
+                        </ShadTooltip>
                     </div>
                   </div>
                 </TableCell>

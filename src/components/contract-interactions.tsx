@@ -21,6 +21,12 @@ import { Skeleton } from "@/components/ui/skeleton"
 import type { Transaction } from "@/services/etherscan"
 import { getTransactions } from "@/app/actions"
 import { useToast } from "@/hooks/use-toast"
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip"
 
 interface ContractInteractionsProps {
     address: string;
@@ -33,6 +39,21 @@ interface Interaction {
     gasSpent: number; // in ETH
     isVerified: boolean; // This would require another API call, defaulting to false
     name: string; // This would require reverse lookup or ABI decoding, defaulting to address
+}
+
+
+function TruncatedAddress({ address }: { address: string }) {
+  const truncated = `${address.substring(0, 8)}...${address.substring(address.length - 6)}`;
+  return (
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <span className="font-mono text-xs text-muted-foreground cursor-pointer">{truncated}</span>
+      </TooltipTrigger>
+      <TooltipContent>
+        <p>{address}</p>
+      </TooltipContent>
+    </Tooltip>
+  )
 }
 
 export function ContractInteractions({ address, blockchain }: ContractInteractionsProps) {
@@ -73,7 +94,7 @@ export function ContractInteractions({ address, blockchain }: ContractInteractio
                 count: 0,
                 gasSpent: 0,
                 isVerified: tx.contractAddress ? true : false, // Simple assumption
-                name: `Contract ${tx.to!.substring(0, 6)}...`
+                name: `Contract`
             };
         }
         interaction.count++;
@@ -118,10 +139,7 @@ export function ContractInteractions({ address, blockchain }: ContractInteractio
                 <TableCell>
                   <div className="font-medium">{interaction.name}</div>
                   <div className="flex items-center gap-2">
-                    <span className="font-mono text-xs text-muted-foreground">
-                      {interaction.address}
-                    </span>
-                     {/* Verification status would require another API call, this is a placeholder */}
+                    <TruncatedAddress address={interaction.address} />
                     <Badge variant={"outline"} className="h-5">
                       Unknown
                     </Badge>
